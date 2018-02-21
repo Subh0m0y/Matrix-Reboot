@@ -2,10 +2,9 @@ import com.github.subh0m0y.matrix.Matrix;
 
 public class Main {
     public static void main(String[] args) {
-        Matrix matrix = Matrix.fromLinearArray(4, 2, 2, 2, 2, 2, 1, 1, 1, 1);
-        System.out.println(matrix);
-        Matrix[] matrices = matrix.splitAtRow(2);
-        System.out.println(matrices[0]);
-        System.out.println(matrices[1]);
+        Matrix original = Matrix.fromLinearArray(4, 4, 1, 2, 3, 4, 2, 3, 4, 1, 3, 4, 1, 2, 4, 1, 2, 3);
+//        System.out.println(original);
+        Matrix inverse = original.getInverse();
+        System.out.println(inverse);
     }
 }

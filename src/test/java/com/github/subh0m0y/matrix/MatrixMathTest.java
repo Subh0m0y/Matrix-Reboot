@@ -13,7 +13,6 @@ public class MatrixMathTest {
     private static final int COLS = 100;
     private static final int POWER_BOUND = 1000;
     private static final int COUNT = 10;
-    private static final double EPS = 1e-15;
 
     private static Random random;
 
@@ -102,7 +101,7 @@ public class MatrixMathTest {
     public void testExponentiation() {
         double[][] data = new double[ROWS][ROWS];
         Utilities.populate(data, random);
-        int power = POWER_BOUND;
+        int power = random.nextInt(POWER_BOUND);
 
         Matrix matrix1 = new Matrix(data, false);
         Matrix matrix2 = new Matrix(data, true);
@@ -118,14 +117,14 @@ public class MatrixMathTest {
     public void testOrthogonal() {
         for (int i = 0; i < COUNT; i++) {
             Matrix matrix = Matrix.identity(ROWS);
-            assertTrue(matrix.isOrthogonal(EPS));
+            assertTrue(matrix.isOrthogonal());
             double theta = random.nextDouble() * Math.PI * 2;
             double cos = Math.cos(theta);
             double sin = Math.sin(theta);
             matrix = Matrix.fromLinearArray(2, 2, cos, -sin, sin, cos);
-            assertTrue(matrix.isOrthogonal(EPS));
+            assertTrue(matrix.isOrthogonal());
             matrix = Matrix.fromLinearArray(2, 2, cos, sin, sin, -cos);
-            assertTrue(matrix.isOrthogonal(EPS));
+            assertTrue(matrix.isOrthogonal());
         }
     }
 }

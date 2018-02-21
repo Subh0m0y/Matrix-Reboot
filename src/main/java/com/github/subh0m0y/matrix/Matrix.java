@@ -4,8 +4,11 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
 
+import static com.github.subh0m0y.matrix.Standards.EPSILON;
+
 @SuppressWarnings("WeakerAccess")
 public class Matrix {
+    public static final String FORMAT_STRING = "%+.2e";
     private final int rows;
     private final int cols;
     private final double[][] data;
@@ -166,10 +169,10 @@ public class Matrix {
             } else {
                 builder.append("| ");
             }
-            builder.append(String.format("%.2e", data[i][0]));
+            builder.append(String.format(FORMAT_STRING, data[i][0]));
             for (int j = 1; j < cols; j++) {
                 builder.append(", ");
-                builder.append(String.format("%.2e", data[i][j]));
+                builder.append(String.format(FORMAT_STRING, data[i][j]));
             }
             if (i == 0) {
                 builder.append("\\");
@@ -198,13 +201,13 @@ public class Matrix {
         return rows == cols;
     }
 
-    public boolean isUpperTriangular(double eps) {
+    public boolean isUpperTriangular() {
         if (!isSquare()) {
             return false;
         }
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < i; j++) {
-                if (Math.abs(data[i][j]) > eps) {
+                if (Math.abs(data[i][j]) > EPSILON) {
                     return false;
                 }
             }
@@ -212,13 +215,13 @@ public class Matrix {
         return true;
     }
 
-    public boolean isLowerTriangular(double eps) {
+    public boolean isLowerTriangular() {
         if (!isSquare()) {
             return false;
         }
         for (int i = 0; i < rows; i++) {
             for (int j = i + 1; j < cols; j++) {
-                if (Math.abs(data[i][j]) > eps) {
+                if (Math.abs(data[i][j]) > EPSILON) {
                     return false;
                 }
             }
@@ -226,16 +229,16 @@ public class Matrix {
         return true;
     }
 
-    public boolean isDiagonal(double eps) {
-        return isLowerTriangular(eps) && isUpperTriangular(eps);
+    public boolean isDiagonal() {
+        return isLowerTriangular() && isUpperTriangular();
     }
 
-    public boolean isIdentity(double eps) {
-        if (!isDiagonal(eps)) {
+    public boolean isIdentity() {
+        if (!isDiagonal()) {
             return false;
         }
         for (int i = 0; i < rows; i++) {
-            if (Math.abs(data[i][i] - 1) > eps) {
+            if (Math.abs(data[i][i] - 1) > EPSILON) {
                 return false;
             }
         }
@@ -262,10 +265,10 @@ public class Matrix {
         return transpose;
     }
 
-    public void zeroFillBelow(final double eps) {
+    public void zeroFill() {
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                if (Math.abs(data[i][j]) < eps) {
+                if (Math.abs(data[i][j]) < EPSILON) {
                     data[i][j] = 0;
                 }
             }
@@ -410,10 +413,10 @@ public class Matrix {
         return product;
     }
 
-    public boolean isOrthogonal(double eps) {
+    public boolean isOrthogonal() {
         Matrix value = multiply(transpose());
-        value.zeroFillBelow(eps);
-        return value.isIdentity(eps);
+        value.zeroFill();
+        return value.isIdentity();
     }
 
     public Matrix appendRight(final Matrix matrix) {
@@ -504,9 +507,96 @@ public class Matrix {
         }
     }
 
-    public Matrix swapColumn(final int col1, final int col2) throws IllegalArgumentException {
+    public Matrix swapColumns(final int col1, final int col2) throws IllegalArgumentException {
         Matrix temp = new Matrix(this);
         temp.swapColumnsInPlace(col1, col2);
         return temp;
+    }
+
+    private void checkLen(double[] doubles, int len) {
+        if (doubles.length != len) {
+            throw new IllegalArgumentException(
+                    "Invalid number of elements. Expected : " + len + " Found : " + doubles.length
+            );
+        }
+    }
+
+    private void addScaledRow(double scale, double[] row, int index) {
+        for (int i = 0; i < cols; i++) {
+            data[index][i] += row[i] * scale;
+        }
+    }
+
+    private void scaleRow(double scale, int index) {
+        for (int i = 0; i < cols; i++) {
+            data[index][i] *= scale;
+        }
+    }
+
+    public void convertToReducedRowEchelon() {
+        int limit = Math.min(rows, cols);
+        // Cascade from the top left corner downwards and rightwards
+        for (int i = 0; i < limit; i++) {
+            double factor = data[i][i];
+            for (int j = i + 1; j < rows; j++) {
+                // Make all the rows below the ith row have zeros in the ith column
+                addScaledRow(-data[j][i] / factor, data[i], j);
+            }
+            // Normalize to make sure that the leading number in every row is 1
+            scaleRow(1 / data[i][i], i);
+        }
+    }
+
+    public void convertEchelonToNormal() {
+        int limit = Math.min(rows, cols);
+        // Cascade from the bottom right part of original matrix upwards and leftwards
+        for (int i = limit - 1; i >= 0; i--) {
+            double factor = data[i][i];
+            for (int j = i - 1; j >= 0; j--) {
+                // Make all the rows above the ith row have zeros in the ith column
+                addScaledRow(-1 / factor, data[i], j);
+            }
+        }
+    }
+
+    private Matrix rowReducedForm = null;
+
+    public int getRank() {
+        if (rowReducedForm == null) {
+            rowReducedForm = new Matrix(this);
+            rowReducedForm.convertToReducedRowEchelon();
+        }
+        int zeroRows = 0, limit = Math.min(rows, cols);
+        outer:
+        for (double[] row : rowReducedForm.data) {
+            for (int i = 0; i < limit; i++) {
+                if (Math.abs(row[i]) > EPSILON) {
+                    continue outer;
+                }
+            }
+            zeroRows++;
+        }
+        return limit - zeroRows;
+    }
+
+    private Matrix inverse = null;
+
+    public Matrix getInverse() throws ArithmeticException {
+        if (inverse != null) {
+            return inverse;
+        }
+        if (!isSquare()) {
+            throw new ArithmeticException("Cannot find inverse of a non-square matrix.");
+        }
+        Matrix augmented = appendRight(Matrix.identity(rows));
+        int rank = augmented.getRank();
+        if (rank < rows) {
+            throw new ArithmeticException("Cannot find inverse of singular matrix.");
+        }
+        augmented.convertEchelonToNormal();
+        Matrix[] matrices = augmented.splitAtColumn(cols);
+        rowReducedForm = matrices[0];
+        inverse = matrices[1];
+        return inverse;
     }
 }

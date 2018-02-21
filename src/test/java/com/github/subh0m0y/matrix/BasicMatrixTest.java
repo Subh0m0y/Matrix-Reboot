@@ -10,7 +10,6 @@ import static org.testng.Assert.*;
 public class BasicMatrixTest {
     private static final int ROWS = 100;
     private static final int COLS = 100;
-    private static final double EPS = 1e-15;
     private static Random random;
 
     @BeforeMethod
@@ -117,31 +116,30 @@ public class BasicMatrixTest {
     public void testIsIdentity() {
         double[][] data = new double[ROWS][ROWS];
         Matrix matrix1 = new Matrix(data, false);
-        assertFalse(matrix1.isIdentity(EPS));
+        assertFalse(matrix1.isIdentity());
         for (int i = 0; i < ROWS; i++) {
             data[i][i] = 1;
         }
         assertTrue(matrix1.isSquare());
-        assertTrue(matrix1.isIdentity(EPS));
+        assertTrue(matrix1.isIdentity());
         changeElement(data, random);
-        assertFalse(matrix1.isIdentity(EPS));
+        assertFalse(matrix1.isIdentity());
 
         Matrix matrix2 = Matrix.identity(ROWS);
-        assertTrue(matrix2.isIdentity(EPS));
+        assertTrue(matrix2.isIdentity());
     }
 
     @Test
     public void testZeroFill() {
         double[][] data = new double[ROWS][COLS];
-        double eps = random.nextDouble() * 0.01;
         for (int i = 0; i < ROWS; i++) {
             for (int j = 0; j < COLS; j++) {
-                data[i][j] = random.nextDouble() * eps;
+                data[i][j] = random.nextDouble() * Standards.EPSILON;
             }
         }
         Matrix matrix = new Matrix(data, false);
         assertFalse(matrix.isZero());
-        matrix.zeroFillBelow(eps);
+        matrix.zeroFill();
         assertTrue(matrix.isZero());
     }
 
@@ -156,7 +154,7 @@ public class BasicMatrixTest {
     }
 
     @Test
-    public void testAppendingAndSplitting() throws Exception {
+    public void testAppendingAndSplitting() {
         Matrix matrix1 = Matrix.random(ROWS, COLS);
         Matrix matrix2 = Matrix.random(ROWS, COLS);
         Matrix matrixHorizontal = matrix1.appendRight(matrix2);
@@ -170,7 +168,7 @@ public class BasicMatrixTest {
     }
 
     @Test
-    public void testSwapAndGetRow() throws Exception {
+    public void testSwapAndGetRow() {
         Matrix matrix1 = Matrix.random(ROWS, COLS);
         Matrix matrix2 = new Matrix(matrix1);
         int row1 = random.nextInt(ROWS);
@@ -180,5 +178,18 @@ public class BasicMatrixTest {
         assertEquals(matrix1, matrix3);
         assertEquals(matrix1.getRow(row1), matrix2.getRow(row2));
         assertEquals(matrix1.getRow(row2), matrix2.getRow(row1));
+    }
+
+    @Test
+    public void testSwapAndGetColumn() {
+        Matrix matrix1 = Matrix.random(ROWS, COLS);
+        Matrix matrix2 = new Matrix(matrix1);
+        int col1 = random.nextInt(ROWS);
+        int col2 = random.nextInt(ROWS);
+        matrix1.swapColumnsInPlace(col1, col2);
+        Matrix matrix3 = matrix2.swapColumns(col1, col2);
+        assertEquals(matrix1, matrix3);
+        assertEquals(matrix1.getColumn(col1), matrix2.getColumn(col2));
+        assertEquals(matrix1.getColumn(col2), matrix2.getColumn(col1));
     }
 }

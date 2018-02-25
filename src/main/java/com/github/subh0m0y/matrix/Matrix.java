@@ -419,6 +419,12 @@ public class Matrix {
         return value.isIdentity();
     }
 
+    public boolean isInvolutary() {
+        Matrix value = multiply(this);
+        value.zeroFill();
+        return value.isIdentity();
+    }
+
     public Matrix appendRight(final Matrix matrix) {
         if (matrix.rows != rows) {
             throwIncompatible("appending right");
